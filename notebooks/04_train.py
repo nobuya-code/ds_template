@@ -185,10 +185,13 @@ def _(CONFIG, X, mo, oof_preds, pd, y):
     # AltairはJSONでデータを埋め込むため、必要な列のみに絞ってHTMLサイズ（最大10MB制限）を回避する
     plot_df = sample_df[["target_actual", "oof_pred", "abs_error", "error"]]
     
+    # 巨大な外れ値に色のスケールが引っ張られないよう、95%タイル値で色の上限をクリップする
+    vmax = plot_df["abs_error"].quantile(0.95)
+    
     scatter = alt.Chart(plot_df).mark_circle(opacity=0.6).encode(
         x=alt.X("target_actual", title="実測値 (Actual)"),
         y=alt.Y("oof_pred", title="予測値 (OOF Prediction)"),
-        color=alt.Color("abs_error", scale=alt.Scale(scheme="reds"), title="絶対誤差"),
+        color=alt.Color("abs_error", scale=alt.Scale(scheme="reds", domain=[0, vmax], clamp=True), title="絶対誤差"),
         tooltip=["target_actual", "oof_pred", "error"]
     ).properties(
         title=f"【{CONFIG['problem_type']}】実測値 vs 予測値 (OOF)",
