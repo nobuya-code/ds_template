@@ -165,5 +165,64 @@ def _(mo, models, oof_score, output_dir, pickle):
     return f, i
 
 
+@app.cell
+def _(CONFIG, X, mo, oof_preds, pd, y):
+    import altair as alt
+    
+    # OOFの予測値と正解データをまとめたDataFrameを作成
+    oof_df = X.copy()
+    oof_df["target_actual"] = y
+    oof_df["oof_pred"] = oof_preds
+    oof_df["error"] = oof_df["target_actual"] - oof_df["oof_pred"]
+    oof_df["abs_error"] = oof_df["error"].abs()
+    
+    # 誤差の大きい順にソート（ワースト100件）
+    worst_df = oof_df.sort_values("abs_error", ascending=False).head(100)
+    
+    # 散布図作成用（データが重すぎないよう最大5000件サンプリング）
+    sample_df = oof_df.sample(n=min(5000, len(oof_df)), random_state=42) if len(oof_df) > 5000 else oof_df
+    
+    scatter = alt.Chart(sample_df).mark_circle(opacity=0.6).encode(
+        x=alt.X("target_actual", title="実測値 (Actual)"),
+        y=alt.Y("oof_pred", title="予測値 (OOF Prediction)"),
+        color=alt.Color("abs_error", scale=alt.Scale(scheme="reds"), title="絶対誤差"),
+        tooltip=["target_actual", "oof_pred", "error"]
+    ).properties(
+        title=f"【{CONFIG['problem_type']}】実測値 vs 予測値 (OOF)",
+        width=650,
+        height=450
+    ).interactive()
+    
+    # 回帰の場合は y=x の対角線（完全予測のライン）を引く
+    if CONFIG["problem_type"] == "regression":
+        min_val = min(sample_df['target_actual'].min(), sample_df['oof_pred'].min())
+        max_val = max(sample_df['target_actual'].max(), sample_df['oof_pred'].max())
+        line = alt.Chart(pd.DataFrame({'x': [min_val, max_val]})).mark_line(color='black', strokeDash=[5,5]).encode(x='x', y='x')
+        chart = scatter + line
+    else:
+        chart = scatter
+        
+    analysis_md = mo.md(f"""
+    ## 🔍 Error Analysis (誤差分析)
+    
+    OOF（Out-Of-Fold）の全予測値と実際の実測値とを比較し、**モデルがどのようなサンプルで大きく予測を外しているか**をインタラクティブに分析できます。
+    
+    - **【散布図の活用】**: 点が対角線（y=x）から大きく外れている、もしくは特定の数値帯で過小/過大評価を繰り返していないか？
+    - **【ワーストテーブルの活用】**: 予測を大きく外したワースト100件の一覧です。「なぜこの車を安く/高く見積もってしまったのか？」を考え、**欠落している情報（= 新しい特徴量）の仮説**を立てて `03_features.py` に反映させることがスコアアップの強力な鍵になります。
+    """)
+    return alt, analysis_md, chart, oof_df, sample_df, scatter, worst_df
+
+
+@app.cell
+def _(analysis_md, chart, mo, worst_df):
+    mo.vstack([
+        analysis_md,
+        mo.ui.altair_chart(chart),
+        mo.md("### 📉 予測ワースト100件の一覧 (最も外れた特徴量構成)"),
+        mo.ui.table(worst_df, selection=None, pagination=True)
+    ])
+    return
+
+
 if __name__ == "__main__":
     app.run()
