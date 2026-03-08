@@ -217,7 +217,7 @@ def _(CONFIG, X, mo, oof_preds, pd, y):
 def _(analysis_md, chart, mo, worst_df):
     mo.vstack([
         analysis_md,
-        mo.ui.altair_chart(chart),
+        mo.as_html(chart),
         mo.md("### 📉 予測ワースト100件の一覧 (最も外れた特徴量構成)"),
         mo.ui.table(worst_df, selection=None, pagination=True)
     ])
