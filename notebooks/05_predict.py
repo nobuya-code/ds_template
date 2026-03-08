@@ -67,6 +67,13 @@ def _(mo, output_dir, pd, preds, test_ids):
     try:
         # 最新の短いハッシュを取得
         git_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL).decode("utf-8").strip()
+        
+        # 未コミットの変更があるかチェック
+        git_status = subprocess.check_output(["git", "status", "--porcelain"], stderr=subprocess.DEVNULL).decode("utf-8").strip()
+        is_dirty = len(git_status) > 0
+        if is_dirty:
+            git_hash = f"{git_hash}_dirty"
+            
         # 最新のコミットメッセージを取得し、ファイル名に使える安全な文字列（英数字とアンダースコアのみ等）にする
         git_msg = subprocess.check_output(["git", "log", "-1", "--pretty=%s"], stderr=subprocess.DEVNULL).decode("utf-8").strip()
         safe_msg = "".join([c if c.isalnum() else "_" for c in git_msg])[:20]  # 長すぎないように20文字でカット
