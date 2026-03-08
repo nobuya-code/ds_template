@@ -182,7 +182,10 @@ def _(CONFIG, X, mo, oof_preds, pd, y):
     # 散布図作成用（データが重すぎないよう最大5000件サンプリング）
     sample_df = oof_df.sample(n=min(5000, len(oof_df)), random_state=42) if len(oof_df) > 5000 else oof_df
     
-    scatter = alt.Chart(sample_df).mark_circle(opacity=0.6).encode(
+    # AltairはJSONでデータを埋め込むため、必要な列のみに絞ってHTMLサイズ（最大10MB制限）を回避する
+    plot_df = sample_df[["target_actual", "oof_pred", "abs_error", "error"]]
+    
+    scatter = alt.Chart(plot_df).mark_circle(opacity=0.6).encode(
         x=alt.X("target_actual", title="実測値 (Actual)"),
         y=alt.Y("oof_pred", title="予測値 (OOF Prediction)"),
         color=alt.Color("abs_error", scale=alt.Scale(scheme="reds"), title="絶対誤差"),
