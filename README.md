@@ -53,6 +53,18 @@ uv run marimo edit notebooks/04_train.py
 uv run marimo edit notebooks/05_predict.py
 ```
 
+### パイプラインの一括自動実行
+
+ノートブックでの試行錯誤が終わったあと、手作業で複数のスクリプトを実行するのが手間な場合は、ルートディレクトリの `run_pipeline.py` を用いることで**全自動でのバッチ実行**が可能です。
+
+```bash
+# 前処理(02)から推論・提出(05)までを全て一括実行する
+uv run python run_pipeline.py
+
+# 特徴量生成(03)から実行し、学習と推論まで完遂する（02の再実行はスキップ）
+uv run python run_pipeline.py --start-from 3
+```
+
 ## ディレクトリ構成
 
 ```text
