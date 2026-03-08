@@ -34,20 +34,23 @@ uv run marimo edit notebooks/01_eda.py
 ### スクリプトの実行例
 
 各処理のテンプレートファイルは以下のように順番に実行・開発を進めることができます。
-モジュール名前空間（`src.`）を正しく解決するため、`-m` フラグを利用して実行してください。
+ノートブックファイルは `marimo edit` で開いて対話的に編集・実行するか、通常のPythonスクリプトとして `python` コマンドで実行可能です。
 
 ```bash
-# 1. 生データを読み込んで前処理を行う
-uv run python -m src.data.preprocess
+# EDA（探索的データ分析）を行う
+uv run marimo edit notebooks/01_eda.py
 
-# 2. 前処理済みデータから特徴量を生成する
-uv run python -m src.features.build_features
+# 前処理ロジックを開発・実行する
+uv run marimo edit notebooks/02_preprocess.py
 
-# 3. K-Fold等をもちいてモデルの学習とローカル評価を行う
-uv run python -m src.models.train
+# 特徴量を生成する
+uv run marimo edit notebooks/03_features.py
 
-# 4. テストデータに対して推論を行い、提出用ファイルを作成する
-uv run python -m src.models.predict
+# モデルの学習を行う
+uv run marimo edit notebooks/04_train.py
+
+# テストデータ推論と提出ファイル作成を行う
+uv run marimo edit notebooks/05_predict.py
 ```
 
 ## ディレクトリ構成
@@ -57,17 +60,14 @@ uv run python -m src.models.predict
 │   ├── raw/               # コンペティションの元データ（Read Onlyで扱う）
 │   ├── processed/         # 前処理済み、または中間データ（.pklなど）
 │   └── output/            # 推論結果（submission.csv等）や学習済みモデル
-├── notebooks/             # marimoを用いたノートブック環境
-│   └── 01_eda.py          # EDA用の雛形スクリプト
-├── src/                   # ソースコード
+├── notebooks/             # marimoを用いたノートブック環境（メイン開発ディレクトリ）
+│   ├── 01_eda.py          # EDA用スクリプト
+│   ├── 02_preprocess.py   # データ読み込み・基礎集計・前処理
+│   ├── 03_features.py     # 特徴量エンジニアリング
+│   ├── 04_train.py        # モデルの学習 (デフォルトはLightGBM CV)
+│   └── 05_predict.py      # テストデータ推論・提出ファイル作成
+├── src/                   # 共通ユーティリティ（オプショナル）
 │   ├── config.py          # ディレクトリパス等の定数管理
-│   ├── data/              
-│   │   └── preprocess.py  # データ読み込み・基礎集計・前処理
-│   ├── features/          
-│   │   └── build_features.py # 特徴量エンジニアリング
-│   ├── models/            
-│   │   ├── train.py       # モデルの学習 (デフォルトはLightGBM CV)
-│   │   └── predict.py     # テストデータ推論・提出ファイル作成
 │   └── utils/             
 │       └── logger.py      # ロガー作成などの共通ユーティリティ
 ├── pyproject.toml         # uv によるプロジェクト情報および依存パッケージ管理
